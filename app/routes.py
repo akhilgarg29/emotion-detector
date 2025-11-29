@@ -30,8 +30,8 @@ async def websocket_endpoint(websocket: WebSocket):
             audio_chunk = np.array(parsed_data['audio'], dtype=np.float32)
             input_timestamp = parsed_data.get('timestamp')
 
-            processor.add_chunk(audio_chunk)
-            result = processor.process(input_timestamp=input_timestamp)
+            processor.add_chunk(audio_chunk, input_timestamp=input_timestamp)
+            result = processor.process()
 
             await websocket.send_json(result)
     except Exception as e:

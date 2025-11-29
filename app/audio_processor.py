@@ -10,16 +10,19 @@ class AudioProcessor:
         # Fixed-size ring buffer to avoid unbounded growth
         self.buffer: Deque[float] = deque(maxlen=self.window_samples)
         self.classifier = None
+        self.latest_input_timestamp: Optional[int] = None
 
     def _ensure_model(self):
         if self.classifier is None:
             self.classifier = get_classifier()
 
-    def add_chunk(self, chunk: np.ndarray) -> None:
+    def add_chunk(self, chunk: np.ndarray, input_timestamp: Optional[int] = None) -> None:
         # Keep only the last window worth of samples
         self.buffer.extend(chunk.tolist())
+        if input_timestamp is not None:
+            self.latest_input_timestamp = input_timestamp
 
-    def process(self, input_timestamp: Optional[int] = None) -> Dict[str, Any]:
+    def process(self) -> Dict[str, Any]:
         # if len(self.buffer) < self.window_samples:
         #     return {"ready": False, "notReadyReason": "insufficient_buffer"}
 
@@ -52,7 +55,7 @@ class AudioProcessor:
             "confidence": float(result[0]['score']),
             "allEmotions": result,
             "level": int(min(audio_level * 1000, 100)),
-            "inputTimestamp": input_timestamp,
+            "inputTimestamp": self.latest_input_timestamp,
         }
 
     def is_model_loaded(self) -> bool:
