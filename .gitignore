@@ -1,5 +1,6 @@
 # Virtual Environment
 emotion_env/
+.venv/
 venv/
 env/
 ENV/
