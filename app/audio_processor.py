@@ -1,12 +1,14 @@
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Deque
+from collections import deque
 from .model import get_classifier
 
 class AudioProcessor:
     def __init__(self, sample_rate: int = 16000, window_seconds: int = 3):
         self.sample_rate = sample_rate
         self.window_samples = sample_rate * window_seconds
-        self.buffer: List[float] = []
+        # Fixed-size ring buffer to avoid unbounded growth
+        self.buffer: Deque[float] = deque(maxlen=self.window_samples)
         self.classifier = None
 
     def _ensure_model(self):
@@ -14,13 +16,14 @@ class AudioProcessor:
             self.classifier = get_classifier()
 
     def add_chunk(self, chunk: np.ndarray) -> None:
+        # Keep only the last window worth of samples
         self.buffer.extend(chunk.tolist())
 
     def process(self, input_timestamp: Optional[int] = None) -> Dict[str, Any]:
-        if len(self.buffer) < self.window_samples:
-            return {"ready": False, "notReadyReason": "insufficient_buffer"}
+        # if len(self.buffer) < self.window_samples:
+        #     return {"ready": False, "notReadyReason": "insufficient_buffer"}
 
-        audio = np.array(self.buffer[-self.window_samples:])
+        audio = np.array(list(self.buffer), dtype=np.float32)
         audio_level = float(np.abs(audio).mean())
 
         if audio_level <= 0.01:
