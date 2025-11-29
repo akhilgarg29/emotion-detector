@@ -12,24 +12,20 @@ import json
 
 app = FastAPI()
 
-# Use pipeline - it handles everything correctly
-print("Loading model...")
-emotion_classifier = pipeline(
-    "audio-classification",
-    model="r-f/wav2vec-english-speech-emotion-recognition",
-    device=-1  # CPU
-)
+# Lazy load model to reduce startup memory
+emotion_classifier = None
 
-print("✅ Model loaded!")
-
-# TEST THE MODEL IMMEDIATELY
-print("\n🧪 Testing model with sample audio...")
-test_audio = np.random.randn(16000).astype(np.float32) * 0.1  # 1 second of noise
-try:
-    test_result = emotion_classifier(test_audio, sampling_rate=16000)
-    print(f"✅ Model works! Test prediction: {test_result[0]['label']} ({test_result[0]['score']*100:.1f}%)")
-except Exception as e:
-    print(f"❌ Model test FAILED: {e}")
+def get_model():
+    global emotion_classifier
+    if emotion_classifier is None:
+        print("Loading model...")
+        emotion_classifier = pipeline(
+            "audio-classification",
+            model="r-f/wav2vec-english-speech-emotion-recognition",
+            device=-1  # CPU
+        )
+        print("✅ Model loaded!")
+    return emotion_classifier
 
 html = """
 <!DOCTYPE html>
@@ -142,7 +138,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     audio = audio / max(np.abs(audio).max(), 1e-5)
                     
                     # Use pipeline - CORRECT and SIMPLE
-                    result = emotion_classifier(audio, sampling_rate=16000)
+                    classifier = get_model()
+                    result = classifier(audio, sampling_rate=16000)
                     
                     await websocket.send_json({
                         "emotion": result[0]['label'],

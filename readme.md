@@ -52,15 +52,3 @@ git remote add origin https://github.com/YOUR_USERNAME/emotion-detector.git
 # Push
 git branch -M main
 git push -u origin main
-
-7. For Render Deployment
-Create render.yaml:
-services:
-  - type: web
-    name: emotion-detector
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
